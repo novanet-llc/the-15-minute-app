@@ -43,5 +43,11 @@ export const Colors = {
         light: '#FEFEFE',
         dark: '#262626',
         darkGrey: '#59555C'
+    },
+    activities: {
+        notProductive: '#EF5350',
+        work: '#D4E157',
+        businessRelated: '#F9A825',
+        upkeep: '#FFFFFF'
     }
 };

@@ -3,37 +3,35 @@ import { HeaderButtons } from '@/components/header-buttons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/colors';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import { getActivitiesForDate } from '@/services/storage';
+import type { DayActivities } from '@/types/activity';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const DARK = Colors.calendar.dark;
-const BEIGE = Colors.calendar.beige;
-const ORANGE = Colors.calendar.orange;
 const TEXT_COLOR = Colors.text.light;
-
-// Mock data for the demonstration
-const MOCK_SCHEDULE: Record<string, string> = {
-    '05:15': '// WAKE UP',
-    '05:30': '// TRAIN',
-    '05:45': '// TRAIN',
-    '06:00': '// TRAIN',
-    '06:15': '// FEED ANIMALS',
-    '06:30': '// GET READY',
-    '06:45': '// TRAVEL',
-    '07:00': '// TRAVEL',
-    '07:15': '// COFFEE',
-    '07:30': '// WORK',
-    '07:45': '// WORK',
-};
-
-const WORK_SLOTS = ['07:30', '07:45'];
 
 export default function DayViewScreen() {
     const { date } = useLocalSearchParams<{ date: string }>();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const [activities, setActivities] = useState<DayActivities>({});
+
+    // Load activities when screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            if (date) {
+                loadActivities();
+            }
+        }, [date])
+    );
+
+    const loadActivities = async () => {
+        if (!date) return;
+        const dayActivities = await getActivitiesForDate(date as string);
+        setActivities(dayActivities);
+    };
 
     const timeSlots = useMemo(() => {
         const slots = [];
@@ -46,9 +44,16 @@ export default function DayViewScreen() {
         return slots;
     }, []);
 
+    const handleSlotPress = (time: string) => {
+        if (activities[time]) {
+            // If there's already an activity, could navigate to edit/delete
+            // For now, navigate to select to replace it
+        }
+        router.push(`/calendar/${date}/select-activity?timeSlot=${time}`);
+    };
+
     const renderSlot = (time: string) => {
-        const activity = MOCK_SCHEDULE[time];
-        const isWork = WORK_SLOTS.includes(time);
+        const activity = activities[time];
         const isFilled = !!activity;
 
         return (
@@ -56,16 +61,20 @@ export default function DayViewScreen() {
                 <ThemedText type="p" style={styles.timeLabel}>{time}</ThemedText>
                 <TouchableOpacity
                     activeOpacity={0.8}
+                    onPress={() => handleSlotPress(time)}
                     style={[
                         styles.card,
                         isFilled && styles.cardFilled,
-                        isWork && styles.cardWork,
+                        isFilled && { backgroundColor: activity.color },
                         !isFilled && styles.cardEmpty
                     ]}
                 >
                     {isFilled ? (
-                        <ThemedText style={[styles.activityText, isWork && styles.activityTextWork]}>
-                            {activity}
+                        <ThemedText style={[
+                            styles.activityText,
+                            { color: activity.color === '#FFFFFF' ? '#1C1C1E' : '#1C1C1E' }
+                        ]}>
+                            {activity.text}
                         </ThemedText>
                     ) : (
                         <ThemedText style={styles.plusText}>+</ThemedText>
@@ -126,10 +135,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
     cardFilled: {
-        backgroundColor: '#FFFFFF',
-    },
-    cardWork: {
-        backgroundColor: '#D4E157', // Light green/yellow as in image
+        // Background color set dynamically based on activity
     },
     cardEmpty: {
         borderWidth: 1,

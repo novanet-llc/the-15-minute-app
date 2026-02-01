@@ -9,6 +9,7 @@ export default function CalendarLayout() {
             <SafeAreaProvider>
                 <Stack screenOptions={{ headerShown: false }} >
                     <Stack.Screen name="index" />
+                    <Stack.Screen name="select-activity" />
                 </Stack>
                 <StatusBar style="light" />
             </SafeAreaProvider>
