@@ -7,7 +7,9 @@ import { getActivitiesForDate } from '@/services/storage';
 import type { DayActivities } from '@/types/activity';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
+import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TEXT_COLOR = Colors.text.light;
@@ -17,6 +19,11 @@ export default function DayViewScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [activities, setActivities] = useState<DayActivities>({});
+    const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set());
+    const [isDragging, setIsDragging] = useState(false);
+    const startSlotIndex = useSharedValue(-1);
+
+    const SLOT_HEIGHT = 40; // 34 height + 6 margin
 
     // Load activities when screen comes into focus
     useFocusEffect(
@@ -45,16 +52,57 @@ export default function DayViewScreen() {
     }, []);
 
     const handleSlotPress = (time: string) => {
-        if (activities[time]) {
-            // If there's already an activity, could navigate to edit/delete
-            // For now, navigate to select to replace it
+        if (selectedSlots.has(time)) {
+            // If multiple slots are selected, navigate with all of them
+            const slotsArray = Array.from(selectedSlots);
+            router.push(`/calendar/${date}/select-activity?timeSlots=${slotsArray.join(',')}`);
+            setSelectedSlots(new Set());
+            return;
         }
+
+        // Single slot press
+        setSelectedSlots(new Set()); // Clear any previous selection
         router.push(`/calendar/${date}/select-activity?timeSlot=${time}`);
     };
 
-    const renderSlot = (time: string) => {
+    const AnalyseHandler = () => {
+        router.push(`/analyse/${date}`);
+    };
+
+    const updateSelection = (y: number) => {
+        const currentIndex = Math.min(Math.max(0, Math.floor(y / SLOT_HEIGHT)), timeSlots.length - 1);
+
+        if (startSlotIndex.value !== -1) {
+            const start = Math.min(startSlotIndex.value, currentIndex);
+            const end = Math.max(startSlotIndex.value, currentIndex);
+            const newSelection = new Set<string>();
+            for (let i = start; i <= end; i++) {
+                newSelection.add(timeSlots[i]);
+            }
+            setSelectedSlots(newSelection);
+        }
+    };
+
+    const panGesture = Gesture.Pan()
+        .activateAfterLongPress(300)
+        .onStart((e) => {
+            const index = Math.min(Math.max(0, Math.floor(e.y / SLOT_HEIGHT)), timeSlots.length - 1);
+            startSlotIndex.value = index;
+            runOnJS(setIsDragging)(true);
+            runOnJS(updateSelection)(e.y);
+        })
+        .onUpdate((e) => {
+            runOnJS(updateSelection)(e.y);
+        })
+        .onEnd(() => {
+            startSlotIndex.value = -1;
+            runOnJS(setIsDragging)(false);
+        });
+
+    const renderSlot = (time: string, index: number) => {
         const activity = activities[time];
         const isFilled = !!activity;
+        const isSelected = selectedSlots.has(time);
 
         return (
             <View key={time} style={styles.slotRow}>
@@ -66,18 +114,24 @@ export default function DayViewScreen() {
                         styles.card,
                         isFilled && styles.cardFilled,
                         isFilled && { backgroundColor: activity.color },
-                        !isFilled && styles.cardEmpty
+                        !isFilled && styles.cardEmpty,
+                        isSelected && styles.cardSelected
                     ]}
                 >
                     {isFilled ? (
                         <ThemedText type="p" style={[
                             styles.activityText,
-                            { color: activity.color === '#FFFFFF' ? '#1C1C1E' : '#1C1C1E' }
+                            { color: '#1C1C1E' }
                         ]}>
                             // {activity.text}
                         </ThemedText>
                     ) : (
-                        <ThemedText type="p" style={styles.plusText}>+</ThemedText>
+                        <ThemedText type="p" style={[
+                            styles.plusText,
+                            isSelected && { color: '#000000' }
+                        ]}>
+                            {isSelected ? '✓' : '+'}
+                        </ThemedText>
                     )}
                 </TouchableOpacity>
             </View>
@@ -88,18 +142,34 @@ export default function DayViewScreen() {
         router.push('/calendar');
     };
 
+    const scrollY = useSharedValue(0);
+
+    const handleScroll = (event: any) => {
+        scrollY.value = event.nativeEvent.contentOffset.y;
+    };
+
     return (
         <ThemedView style={styles.container}>
             <HeaderButtons buttonsStyle="light" />
 
             <ScrollView
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
                 contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom }]}
                 showsVerticalScrollIndicator={false}
+                scrollEnabled={!isDragging}
             >
-                {timeSlots.map(renderSlot)}
+                <GestureDetector gesture={panGesture}>
+                    <View style={{ width: '100%', backgroundColor: 'transparent' }}>
+                        {timeSlots.map((time, index) => renderSlot(time, index))}
+                    </View>
+                </GestureDetector>
             </ScrollView>
 
-            <AppButton text="Back" onPress={BackHandler} style={{ marginHorizontal: 24 }} />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginHorizontal: 24, gap: 10 }}>
+                <AppButton text="Back" onPress={BackHandler} />
+                <AppButton text="Analyse" onPress={AnalyseHandler} style={{ backgroundColor: Colors.background.light }} />
+            </View>
         </ThemedView>
     );
 }
@@ -149,5 +219,11 @@ const styles = StyleSheet.create({
         fontSize: 30,
         color: TEXT_COLOR,
         textAlign: 'center',
+    },
+    cardSelected: {
+        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+        borderColor: '#ffffff',
+        borderWidth: 2,
+        borderStyle: 'solid',
     },
 });

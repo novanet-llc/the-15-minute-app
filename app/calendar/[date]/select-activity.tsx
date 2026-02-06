@@ -4,7 +4,7 @@ import { HeaderButtons } from '@/components/header-buttons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/colors';
-import { saveActivity } from '@/services/storage';
+import { saveActivitiesBatch, saveActivity } from '@/services/storage';
 import { ACTIVITY_CATEGORIES, ACTIVITY_SUBCATEGORIES, type ActivityCategory } from '@/types/activity';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -12,7 +12,7 @@ import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SelectActivityScreen() {
-    const { date, timeSlot } = useLocalSearchParams<{ date: string; timeSlot: string }>();
+    const { date, timeSlot, timeSlots } = useLocalSearchParams<{ date: string; timeSlot?: string; timeSlots?: string }>();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | null>(null);
@@ -22,17 +22,24 @@ export default function SelectActivityScreen() {
     };
 
     const handleAddActivity = async (subcategory: string) => {
-        if (!selectedCategory || !date || !timeSlot) {
+        if (!selectedCategory || !date) {
             return;
         }
 
         const activityData = ACTIVITY_CATEGORIES[selectedCategory];
-        await saveActivity(date as string, timeSlot as string, {
+        const activity = {
             category: selectedCategory,
             subcategory,
             color: activityData.color,
             text: subcategory
-        });
+        };
+
+        if (timeSlots) {
+            const slots = timeSlots.split(',');
+            await saveActivitiesBatch(date as string, slots, activity);
+        } else if (timeSlot) {
+            await saveActivity(date as string, timeSlot as string, activity);
+        }
 
         router.back();
     };

@@ -129,6 +129,26 @@ export async function saveActivity(date: string, timeSlot: string, activity: Act
 }
 
 /**
+ * Save activities for multiple time slots at once
+ * @param date - Date string in YYYY-MM-DD format
+ * @param timeSlots - Array of time slots in HH:MM format
+ * @param activity - Activity object to apply to all slots
+ */
+export async function saveActivitiesBatch(date: string, timeSlots: string[], activity: Activity): Promise<void> {
+    const monthlyData = await loadMonthlyActivities(date);
+
+    if (!monthlyData[date]) {
+        monthlyData[date] = getInitialDayActivities();
+    }
+
+    timeSlots.forEach(timeSlot => {
+        monthlyData[date][timeSlot] = { ...activity };
+    });
+
+    await saveMonthlyActivities(date, monthlyData);
+}
+
+/**
  * Delete an activity for a specific date and time slot
  * @param date - Date string in YYYY-MM-DD format
  * @param timeSlot - Time slot in HH:MM format
