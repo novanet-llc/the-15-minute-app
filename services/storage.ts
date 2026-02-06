@@ -2,28 +2,29 @@
  * Storage service for managing monthly activity data using JSON files
  */
 
-import type { Activity, DayActivities, MonthlyActivities } from '@/types/activity';
-import { Directory, File, Paths } from 'expo-file-system';
+import { ACTIVITY_CATEGORIES, type Activity, type DayActivities, type MonthlyActivities } from '@/types/activity';
+import * as FileSystem from 'expo-file-system/legacy';
 
-const STORAGE_DIR = new Directory(Paths.document, 'activities');
+const STORAGE_DIR = `${FileSystem.documentDirectory}activities/`;
 
 /**
  * Ensure the storage directory exists
  */
 async function ensureStorageDirectory(): Promise<void> {
-    if (!STORAGE_DIR.exists) {
-        STORAGE_DIR.create({ idempotent: true });
+    const dirInfo = await FileSystem.getInfoAsync(STORAGE_DIR);
+    if (!dirInfo.exists) {
+        await FileSystem.makeDirectoryAsync(STORAGE_DIR, { intermediates: true });
     }
 }
 
 /**
- * Get the file for a specific month
+ * Get the file path for a specific month
  * @param date - Date string in YYYY-MM-DD format
- * @returns File instance for the month's activity data
+ * @returns File path for the month's activity data
  */
-function getMonthlyFile(date: string): File {
+function getMonthlyFilePath(date: string): string {
     const yearMonth = date.substring(0, 7); // Extract YYYY-MM
-    return new File(STORAGE_DIR, `activities-${yearMonth}.json`);
+    return `${STORAGE_DIR}activities-${yearMonth}.json`;
 }
 
 /**
@@ -33,11 +34,12 @@ function getMonthlyFile(date: string): File {
  */
 async function loadMonthlyActivities(date: string): Promise<MonthlyActivities> {
     await ensureStorageDirectory();
-    const file = getMonthlyFile(date);
+    const filePath = getMonthlyFilePath(date);
 
     try {
-        if (file.exists) {
-            const content = await file.text();
+        const fileInfo = await FileSystem.getInfoAsync(filePath);
+        if (fileInfo.exists) {
+            const content = await FileSystem.readAsStringAsync(filePath);
             return JSON.parse(content) as MonthlyActivities;
         }
     } catch (error) {
@@ -48,16 +50,50 @@ async function loadMonthlyActivities(date: string): Promise<MonthlyActivities> {
 }
 
 /**
+ * Get initial activities for a new day
+ * @returns Default activities (Sleep slots)
+ */
+function getInitialDayActivities(): DayActivities {
+    const activities: DayActivities = {};
+    const sleepActivity: Activity = {
+        category: 'UPKEEP',
+        subcategory: 'SLEEP',
+        color: ACTIVITY_CATEGORIES.UPKEEP.color,
+        text: 'SLEEP'
+    };
+
+    // 0:00 - 5:00
+    for (let hour = 0; hour <= 5; hour++) {
+        for (let min = 0; min < 60; min += 15) {
+            if (hour === 5 && min > 0) break;
+            const time = `${hour}:${min.toString().padStart(2, '0')}`;
+            activities[time] = { ...sleepActivity };
+        }
+    }
+
+    // 22:30 - 23:45
+    for (let hour = 22; hour <= 23; hour++) {
+        for (let min = 0; min < 60; min += 15) {
+            if (hour === 22 && min < 30) continue;
+            const time = `${hour}:${min.toString().padStart(2, '0')}`;
+            activities[time] = { ...sleepActivity };
+        }
+    }
+
+    return activities;
+}
+
+/**
  * Save monthly activities to file
  * @param date - Date string in YYYY-MM-DD format
  * @param monthlyData - Monthly activities object
  */
 async function saveMonthlyActivities(date: string, monthlyData: MonthlyActivities): Promise<void> {
     await ensureStorageDirectory();
-    const file = getMonthlyFile(date);
+    const filePath = getMonthlyFilePath(date);
 
     try {
-        await file.write(JSON.stringify(monthlyData, null, 2));
+        await FileSystem.writeAsStringAsync(filePath, JSON.stringify(monthlyData, null, 2));
     } catch (error) {
         console.error('Error saving monthly activities:', error);
         throw error;
@@ -71,7 +107,7 @@ async function saveMonthlyActivities(date: string, monthlyData: MonthlyActivitie
  */
 export async function getActivitiesForDate(date: string): Promise<DayActivities> {
     const monthlyData = await loadMonthlyActivities(date);
-    return monthlyData[date] || {};
+    return monthlyData[date] || getInitialDayActivities();
 }
 
 /**
@@ -84,7 +120,7 @@ export async function saveActivity(date: string, timeSlot: string, activity: Act
     const monthlyData = await loadMonthlyActivities(date);
 
     if (!monthlyData[date]) {
-        monthlyData[date] = {};
+        monthlyData[date] = getInitialDayActivities();
     }
 
     monthlyData[date][timeSlot] = activity;

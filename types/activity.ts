@@ -6,6 +6,7 @@ export type ActivityCategory = 'NOT_PRODUCTIVE' | 'WORK' | 'BUSINESS_RELATED' | 
 
 export interface Activity {
     category: ActivityCategory;
+    subcategory?: string;
     color: string;
     text: string;
 }
@@ -21,18 +22,51 @@ export interface MonthlyActivities {
 export const ACTIVITY_CATEGORIES: Record<ActivityCategory, { color: string; text: string }> = {
     NOT_PRODUCTIVE: {
         color: '#EF5350',
-        text: '// NOT PRODUCTIVE'
+        text: 'NOT PRODUCTIVE'
     },
     WORK: {
         color: '#D4E157',
-        text: '// WORK'
+        text: 'WORK'
     },
     BUSINESS_RELATED: {
         color: '#F9A825',
-        text: '// BUSINESS RELATED'
+        text: 'BUSINESS RELATED'
     },
     UPKEEP: {
         color: '#FFFFFF',
-        text: '// UPKEEP'
+        text: 'UPKEEP'
     }
+};
+
+export const ACTIVITY_SUBCATEGORIES: Record<ActivityCategory, string[]> = {
+    NOT_PRODUCTIVE: [
+        'DOOMSCROLLING',
+        'WATCHING TV',
+        'GAMING',
+        'SHOPPING',
+        'PHONE'
+    ],
+    WORK: [
+        'WORK'
+    ],
+    BUSINESS_RELATED: [
+        'NETWORKING',
+        'MEETING'
+    ],
+    UPKEEP: [
+        'TRAINING',
+        'FEEDING ANIMALS',
+        'FAMILY TIME',
+        'KIDS TIME',
+        'HOUSEHOLD CHORES',
+        'GROCERY SHOPPING',
+        'TRAVELING',
+        'SLEEP',
+        'RELATIVES',
+        'COFFEE',
+        'GARDENING',
+        'BREAKFAST',
+        'LUNCH',
+        'DINNER'
+    ]
 };

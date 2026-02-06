@@ -5,10 +5,10 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/colors';
 import { saveActivity } from '@/services/storage';
-import { ACTIVITY_CATEGORIES, type ActivityCategory } from '@/types/activity';
+import { ACTIVITY_CATEGORIES, ACTIVITY_SUBCATEGORIES, type ActivityCategory } from '@/types/activity';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SelectActivityScreen() {
@@ -17,24 +17,32 @@ export default function SelectActivityScreen() {
     const insets = useSafeAreaInsets();
     const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | null>(null);
 
-    const handleAddActivity = async (category?: ActivityCategory) => {
-        const categoryToUse = category || selectedCategory;
-        if (!categoryToUse || !date || !timeSlot) {
+    const handleCategorySelect = (category: ActivityCategory) => {
+        setSelectedCategory(category);
+    };
+
+    const handleAddActivity = async (subcategory: string) => {
+        if (!selectedCategory || !date || !timeSlot) {
             return;
         }
 
-        const activityData = ACTIVITY_CATEGORIES[categoryToUse];
+        const activityData = ACTIVITY_CATEGORIES[selectedCategory];
         await saveActivity(date as string, timeSlot as string, {
-            category: categoryToUse,
+            category: selectedCategory,
+            subcategory,
             color: activityData.color,
-            text: activityData.text
+            text: subcategory
         });
 
         router.back();
     };
 
     const handleBack = () => {
-        router.back();
+        if (selectedCategory) {
+            setSelectedCategory(null);
+        } else {
+            router.back();
+        }
     };
 
     return (
@@ -42,56 +50,77 @@ export default function SelectActivityScreen() {
             <HeaderButtons buttonsStyle="light" />
 
             <ScrollView
-                contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}
+                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={styles.gridContainer}>
-                    <View style={styles.gridRow}>
-                        <ActivityCard
-                            color={ACTIVITY_CATEGORIES.NOT_PRODUCTIVE.color}
-                            text={ACTIVITY_CATEGORIES.NOT_PRODUCTIVE.text}
-                            onPress={() => handleAddActivity('NOT_PRODUCTIVE')}
-                        />
-                        <View style={styles.gap} />
-                        <ActivityCard
-                            color={ACTIVITY_CATEGORIES.WORK.color}
-                            text={ACTIVITY_CATEGORIES.WORK.text}
-                            onPress={() => handleAddActivity('WORK')}
-                        />
+                {!selectedCategory ? (
+                    <View style={styles.gridContainer}>
+                        <View style={styles.gridRow}>
+                            <ActivityCard
+                                color={ACTIVITY_CATEGORIES.NOT_PRODUCTIVE.color}
+                                text={ACTIVITY_CATEGORIES.NOT_PRODUCTIVE.text}
+                                onPress={() => handleCategorySelect('NOT_PRODUCTIVE')}
+                            />
+                            <View style={styles.gap} />
+                            <ActivityCard
+                                color={ACTIVITY_CATEGORIES.WORK.color}
+                                text={ACTIVITY_CATEGORIES.WORK.text}
+                                onPress={() => handleCategorySelect('WORK')}
+                            />
+                        </View>
+
+                        <View style={styles.gridRowGap} />
+
+                        <View style={styles.gridRow}>
+                            <ActivityCard
+                                color={ACTIVITY_CATEGORIES.BUSINESS_RELATED.color}
+                                text={ACTIVITY_CATEGORIES.BUSINESS_RELATED.text}
+                                onPress={() => handleCategorySelect('BUSINESS_RELATED')}
+                            />
+                            <View style={styles.gap} />
+                            <ActivityCard
+                                color={ACTIVITY_CATEGORIES.UPKEEP.color}
+                                text={ACTIVITY_CATEGORIES.UPKEEP.text}
+                                onPress={() => handleCategorySelect('UPKEEP')}
+                            />
+                        </View>
                     </View>
-
-                    <View style={styles.gridRowGap} />
-
-                    <View style={styles.gridRow}>
-                        <ActivityCard
-                            color={ACTIVITY_CATEGORIES.BUSINESS_RELATED.color}
-                            text={ACTIVITY_CATEGORIES.BUSINESS_RELATED.text}
-                            onPress={() => handleAddActivity('BUSINESS_RELATED')}
-                        />
-                        <View style={styles.gap} />
-                        <ActivityCard
-                            color={ACTIVITY_CATEGORIES.UPKEEP.color}
-                            text={ACTIVITY_CATEGORIES.UPKEEP.text}
-                            onPress={() => handleAddActivity('UPKEEP')}
-                        />
+                ) : (
+                    <View style={styles.subcategoryContainer}>
+                        {(ACTIVITY_SUBCATEGORIES[selectedCategory] as string[]).map((sub: string, index: number) => (
+                            <TouchableOpacity
+                                key={index}
+                                style={[
+                                    styles.subcategoryButton,
+                                    { backgroundColor: ACTIVITY_CATEGORIES[selectedCategory].color }
+                                ]}
+                                onPress={() => handleAddActivity(sub)}
+                                activeOpacity={0.8}
+                            >
+                                <ThemedText style={styles.subcategoryText}>
+                                    // {sub}
+                                </ThemedText>
+                            </TouchableOpacity>
+                        ))}
                     </View>
-                </View>
-
-                <View style={styles.textContainer}>
-                    <ThemedText type="p" style={styles.explanationText}>
-                        These are the most common{'\n'}
-                        things you do in a day.{'\n'}
-                        Keep attention to their{'\n'}
-                        ratio. You can add others,{'\n'}
-                        but why?
-                    </ThemedText>
-                </View>
+                )}
             </ScrollView>
 
-            <View style={styles.buttonContainer}>
-                <AppButton text="Back" onPress={handleBack} style={styles.button} />
-                <AppButton text="Add" onPress={handleAddActivity} style={styles.button} />
+            <View style={styles.footerContainer}>
+                <ThemedView
+                    style={styles.divider}
+                    lightColor={Colors.landing.dividerLight}
+                    darkColor={Colors.landing.dividerDark}
+                />
+
+                <ThemedView style={styles.subtitleContainer}>
+                    <ThemedText type="p" style={styles.subtitle}>
+                        These are the most common things you do in a day. Keep attention to their ratio. You maybe want to add others, but why?
+                    </ThemedText>
+                </ThemedView>
             </View>
+
+            <AppButton text="Back" onPress={handleBack} style={{ marginHorizontal: 24 }} />
         </ThemedView>
     );
 }
@@ -100,47 +129,62 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'flex-end',
-        paddingBottom: 60,
+        paddingBottom: 30,
+        gap: 20
     },
     scrollContent: {
         paddingHorizontal: 24,
-        paddingTop: 40,
+        gap: 10,
+        flexDirection: 'column',
+    },
+    footerContainer: {
+        paddingHorizontal: 24,
+        gap: 10,
+        flexDirection: 'column',
+    },
+    subcategoryContainer: {
+        width: '100%',
+        gap: 8,
+    },
+    subcategoryButton: {
+        width: '100%',
+        height: 50,
+        borderRadius: 12,
+        justifyContent: 'center',
+        paddingHorizontal: 20,
+    },
+    subcategoryText: {
+        fontSize: 18,
+        color: '#1C1C1E',
     },
     gridContainer: {
         width: '100%',
-        maxWidth: 400,
-        alignSelf: 'center',
+        flexDirection: 'column',
     },
     gridRow: {
         flexDirection: 'row',
-        gap: 20,
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     gridRowGap: {
-        height: 20,
+        height: 10,
     },
     gap: {
-        width: 20,
+        width: 10,
     },
-    textContainer: {
-        marginTop: 60,
-        paddingHorizontal: 24,
+    divider: {
+        height: 1,
+        width: '100%',
+        marginBottom: 12,
     },
-    explanationText: {
+    subtitleContainer: {
+        width: '100%',
+        alignItems: 'flex-end',
+    },
+    subtitle: {
+        textAlign: 'left',
+        maxWidth: '80%',
+        opacity: 0.9,
         fontSize: 16,
-        color: Colors.text.light,
-        textAlign: 'center',
-        fontFamily: 'GeistMono-Light',
-        lineHeight: 24,
-    },
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 24,
-        gap: 16,
-        marginTop: 20,
-    },
-    button: {
-        flex: 1,
-        marginTop: 0,
     },
 });

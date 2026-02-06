@@ -17,8 +17,8 @@ export function ActivityCard({ color, text, onPress }: ActivityCardProps) {
             onPress={onPress}
             activeOpacity={0.8}
         >
-            <ThemedText style={[styles.text, { color: textColor }]}>
-                {text}
+            <ThemedText type="p" style={[styles.text, { color: textColor }]}>
+                // {'\n'}{text}
             </ThemedText>
         </TouchableOpacity>
     );
@@ -30,18 +30,11 @@ const styles = StyleSheet.create({
         aspectRatio: 1,
         borderRadius: 20,
         justifyContent: 'center',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         padding: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
     },
     text: {
-        fontSize: 18,
-        fontFamily: 'Geist-Bold',
-        textAlign: 'center',
-        letterSpacing: 1,
+        fontSize: 22,
+        textAlign: 'left',
     },
 });

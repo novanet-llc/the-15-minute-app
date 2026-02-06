@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "the-15-minute-app",
+    "name": "The 15 Minute App",
     "slug": "the-15-minute-app",
-    "version": "1.0.0",
+    "version": "0.4.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "the15minuteapp",
@@ -12,7 +12,9 @@
       "backgroundColor": "transparent"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "requireFullScreen": true,
+      "bundleIdentifier": "hu.novanet.the15minuteapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +24,13 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "hu.novanet.the15minuteapp",
+      "androidNavigationBar": {
+        "visible": "visible",
+        "backgroundColor": "transparent",
+        "barStyle": "light-content"
+      }
     },
     "web": {
       "output": "static",
@@ -46,6 +54,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8ddc67eb-1cce-4de0-8b25-f5d1d06a2c4d"
+      }
+    },
+    "owner": "central-novanet"
   }
 }

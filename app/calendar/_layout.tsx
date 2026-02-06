@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function CalendarLayout() {
+
     return (
         <ThemeProvider value={DefaultTheme}>
             <SafeAreaProvider>

@@ -12,6 +12,7 @@ export default function RootLayout() {
     ...fontMap
   });
 
+
   if (!loaded) {
     // Async font loading only occurs in development.
     return null;

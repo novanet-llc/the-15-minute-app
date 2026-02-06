@@ -70,14 +70,14 @@ export default function DayViewScreen() {
                     ]}
                 >
                     {isFilled ? (
-                        <ThemedText style={[
+                        <ThemedText type="p" style={[
                             styles.activityText,
                             { color: activity.color === '#FFFFFF' ? '#1C1C1E' : '#1C1C1E' }
                         ]}>
-                            {activity.text}
+                            // {activity.text}
                         </ThemedText>
                     ) : (
-                        <ThemedText style={styles.plusText}>+</ThemedText>
+                        <ThemedText type="p" style={styles.plusText}>+</ThemedText>
                     )}
                 </TouchableOpacity>
             </View>
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'flex-end',
-        paddingBottom: 60,
+        paddingBottom: 30,
         gap: 20
     },
     scrollContent: {
@@ -121,11 +121,10 @@ const styles = StyleSheet.create({
         gap: 16,
     },
     timeLabel: {
-        width: 80,
+        width: 60,
         textAlign: 'right',
         color: TEXT_COLOR,
-        fontSize: 22,
-        fontFamily: 'GeistMono-Light',
+        fontSize: 18,
     },
     card: {
         flex: 1,
@@ -138,24 +137,17 @@ const styles = StyleSheet.create({
         // Background color set dynamically based on activity
     },
     cardEmpty: {
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderColor: '#ffffff',
         borderStyle: 'dashed',
         backgroundColor: 'transparent',
     },
     activityText: {
         fontSize: 16,
-        fontFamily: 'Geist-Bold',
-        color: '#1C1C1E',
-        letterSpacing: 1,
-    },
-    activityTextWork: {
-        color: '#1C1C1E',
     },
     plusText: {
-        fontSize: 36,
+        fontSize: 30,
         color: TEXT_COLOR,
         textAlign: 'center',
-        fontFamily: 'GeistMono-Light',
     },
 });

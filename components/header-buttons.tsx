@@ -50,7 +50,7 @@ export function HeaderButtons({ style, buttonsStyle = 'dark', onBlobPress, onGri
 
 const styles = StyleSheet.create({
     header: {
-        marginTop: 40,
+        marginTop: 20,
         paddingHorizontal: 24,
         flexDirection: 'row',
         justifyContent: 'flex-end',
