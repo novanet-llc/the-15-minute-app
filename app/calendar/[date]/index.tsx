@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'flex-end',
-        paddingBottom: 30,
+        paddingBottom: 60,
         gap: 20
     },
     scrollContent: {

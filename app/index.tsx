@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 24,
         justifyContent: 'flex-end', // Content aligns to the bottom
-        paddingBottom: 30,
+        paddingBottom: 60,
     },
     contentContainer: {
         width: '100%',

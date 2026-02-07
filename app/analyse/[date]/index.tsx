@@ -96,6 +96,9 @@ export default function AnalyseScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        justifyContent: 'flex-end',
+        paddingBottom: 60,
+        gap: 20
     },
     content: {
         flex: 1,
