@@ -61,7 +61,7 @@ const MonthSkeleton = ({ windowWidth }: { windowWidth: number }) => (
         <View style={styles.gridContainer}>
             {Array.from({ length: 35 }).map((_, i) => (
                 <View key={i} style={styles.gridCell}>
-                    <View style={[styles.circle, { backgroundColor: BEIGE, opacity: 0.3 }]} />
+                    <View style={[styles.circle, { backgroundColor: '#9e9e9eff', opacity: 0.5 }]} />
                 </View>
             ))}
         </View>
@@ -295,8 +295,8 @@ const styles = StyleSheet.create({
         backgroundColor: BEIGE,
     },
     skeletonText: {
-        backgroundColor: BEIGE,
+        backgroundColor: '#9e9e9eff',
         borderRadius: 8,
-        opacity: 0.3,
+        opacity: 0.5,
     },
 });

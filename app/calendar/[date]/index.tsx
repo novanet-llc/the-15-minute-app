@@ -13,6 +13,7 @@ import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TEXT_COLOR = Colors.text.light;
+const SELECTED_COLOR = Colors.background.darkGrey;
 
 export default function DayViewScreen() {
     const { date } = useLocalSearchParams<{ date: string }>();
@@ -127,10 +128,8 @@ export default function DayViewScreen() {
                         </ThemedText>
                     ) : (
                         <ThemedText type="p" style={[
-                            styles.plusText,
-                            isSelected && { color: '#000000' }
-                        ]}>
-                            {isSelected ? '✓' : '+'}
+                            styles.plusText
+                        ]}>+
                         </ThemedText>
                     )}
                 </TouchableOpacity>
@@ -221,9 +220,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     cardSelected: {
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
-        borderColor: '#ffffff',
-        borderWidth: 2,
-        borderStyle: 'solid',
+        backgroundColor: SELECTED_COLOR
     },
 });
