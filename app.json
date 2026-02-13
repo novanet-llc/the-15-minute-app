@@ -8,10 +8,6 @@
     "scheme": "the15minuteapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "androidNavigationBar": {
-        "backgroundColor": "transparent",
-        "barStyle": "light-content"
-    },
     "ios": {
       "supportsTablet": true,
       "requireFullScreen": true,

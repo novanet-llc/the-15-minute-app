@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const ORANGE = Colors.calendar.orange;
 const BEIGE = Colors.calendar.beige;
 const DARK = Colors.calendar.dark;
+const LIGHT = Colors.calendar.light;
 
 // Types for day items
 type DayStatus = 'past' | 'today' | 'future';
@@ -181,7 +182,7 @@ export default function CalendarScreen() {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: Colors.background.light }]}>
+        <View style={[styles.container, { backgroundColor: DARK }]}>
             <HeaderButtons />
 
             <View style={styles.content}>
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
         lineHeight: 120,
         fontFamily: 'Geist-Bold',
         marginBottom: -10,
-        color: Colors.calendar.dark,
+        color: LIGHT,
     },
     monthRow: {
         marginTop: 26,
@@ -250,7 +251,7 @@ const styles = StyleSheet.create({
     monthText: {
         fontSize: 32,
         fontFamily: 'Geist-Bold',
-        color: DARK,
+        color: LIGHT,
     },
     dayText: {
         fontSize: 32,
@@ -260,7 +261,7 @@ const styles = StyleSheet.create({
     yearText: {
         fontSize: 32,
         fontFamily: 'Geist-Light',
-        color: DARK,
+        color: LIGHT,
         marginTop: 10,
     },
     gridContainer: {
@@ -274,19 +275,19 @@ const styles = StyleSheet.create({
         aspectRatio: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 1,
+        padding: 2,
     },
     circle: {
         width: '100%',
         height: '100%',
-        borderRadius: 100,
+        borderRadius: 10,
     },
     circleEmpty: {
         borderWidth: 1,
         borderColor: BEIGE,
     },
     circlePast: {
-        backgroundColor: DARK,
+        backgroundColor: LIGHT,
     },
     circleToday: {
         backgroundColor: ORANGE,

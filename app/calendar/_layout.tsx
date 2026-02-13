@@ -11,7 +11,7 @@ export default function CalendarLayout() {
                 <Stack screenOptions={{ headerShown: false }} >
                     <Stack.Screen name="index" />
                 </Stack>
-                <StatusBar style="dark" />
+                <StatusBar style="light" />
             </SafeAreaProvider>
         </ThemeProvider>
     );

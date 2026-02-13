@@ -34,6 +34,7 @@ export const Colors = {
         orange: '#FF4500',
         beige: '#E6D5B7',
         dark: '#262626',
+        light: '#FEFEFE',
     },
     text: {
         light: '#FFFFFF',
