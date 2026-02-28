@@ -1,40 +1,47 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/colors';
 
+import * as NavigationBar from 'expo-navigation-bar';
+import { useEffect } from 'react';
+
 export default function LandingScreen() {
     const router = useRouter();
+
+    useEffect(() => {
+        if (Platform.OS === 'android') {
+            void NavigationBar.setButtonStyleAsync('dark');
+        }
+    }, []);
 
     const onStart = () => {
         router.push('/calendar');
     };
 
     return (
-        <ThemedView style={[styles.container, { backgroundColor: Colors.background.dark }]}>
-            <ThemedView style={styles.contentContainer}>
-                <ThemedText type="h1" style={styles.title}>
-                    The 15 Minute App
+        <ThemedView style={styles.container}>
+            <ThemedText type="h1" style={styles.title}>
+                The 15 Minute App
+            </ThemedText>
+
+            <ThemedView
+                style={styles.divider}
+                lightColor={Colors.landing.dividerLight}
+                darkColor={Colors.landing.dividerDark}
+            />
+
+            <ThemedView style={styles.subtitleContainer}>
+                <ThemedText type="p" style={styles.subtitle}>
+                    The perfect time tracker if you are aim to join to the productivity tribe.
+                    Check your spent effort anytime and so you can eliminate the unnecessary timetraps.
                 </ThemedText>
-
-                <ThemedView
-                    style={styles.divider}
-                    lightColor={Colors.landing.dividerLight}
-                    darkColor={Colors.landing.dividerDark}
-                />
-
-                <ThemedView style={styles.subtitleContainer}>
-                    <ThemedText type="p" style={styles.subtitle}>
-                        The perfect time tracker if you are aim to join to the productivity tribe.
-                        Check your spent effort anytime and so you can eliminate the unnecessary timetraps.
-                    </ThemedText>
-                </ThemedView>
-
-                <AppButton text="Start" onPress={onStart} />
             </ThemedView>
+
+            <AppButton text="Start" onPress={onStart} />
         </ThemedView>
     );
 }

@@ -28,6 +28,15 @@ function getMonthlyFilePath(date: string): string {
 }
 
 /**
+ * Get the file path for a specific month
+ * @param yearMonth - Month string in YYYY-MM format
+ * @returns File path for the month's activity data
+ */
+function getMonthlyFilePathForMonth(yearMonth: string): string {
+    return `${STORAGE_DIR}activities-${yearMonth}.json`;
+}
+
+/**
  * Load monthly activities from file
  * @param date - Date string in YYYY-MM-DD format
  * @returns Monthly activities object
@@ -35,6 +44,28 @@ function getMonthlyFilePath(date: string): string {
 async function loadMonthlyActivities(date: string): Promise<MonthlyActivities> {
     await ensureStorageDirectory();
     const filePath = getMonthlyFilePath(date);
+
+    try {
+        const fileInfo = await FileSystem.getInfoAsync(filePath);
+        if (fileInfo.exists) {
+            const content = await FileSystem.readAsStringAsync(filePath);
+            return JSON.parse(content) as MonthlyActivities;
+        }
+    } catch (error) {
+        console.error('Error loading monthly activities:', error);
+    }
+
+    return {};
+}
+
+/**
+ * Load monthly activities for a specific month
+ * @param yearMonth - Month string in YYYY-MM format
+ * @returns Monthly activities object
+ */
+export async function getMonthlyActivitiesForMonth(yearMonth: string): Promise<MonthlyActivities> {
+    await ensureStorageDirectory();
+    const filePath = getMonthlyFilePathForMonth(yearMonth);
 
     try {
         const fileInfo = await FileSystem.getInfoAsync(filePath);

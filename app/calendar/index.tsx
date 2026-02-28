@@ -1,5 +1,7 @@
+import { AppButton } from '@/components/app-button';
 import { HeaderButtons } from '@/components/header-buttons';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/colors';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -55,16 +57,19 @@ const MonthSkeleton = ({ windowWidth }: { windowWidth: number }) => (
     <View style={{ width: windowWidth, paddingHorizontal: 24, opacity: 0.5 }}>
         <View style={[styles.skeletonText, { width: 150, height: 120, marginBottom: 20 }]} />
         <View style={styles.monthRow}>
-            <View style={[styles.skeletonText, { width: 120, height: 32 }]} />
-            <View style={[styles.skeletonText, { width: 60, height: 32 }]} />
+            <View style={[styles.skeletonText, { width: 120, height: 24 }]} />
+            <View style={[styles.skeletonText, { width: 60, height: 24 }]} />
         </View>
-        <View style={[styles.skeletonText, { width: 100, height: 32, marginTop: 10 }]} />
+        <View style={[styles.skeletonText, { width: 100, height: 24, marginTop: 10 }]} />
         <View style={styles.gridContainer}>
             {Array.from({ length: 35 }).map((_, i) => (
                 <View key={i} style={styles.gridCell}>
                     <View style={[styles.circle, { backgroundColor: '#9e9e9eff', opacity: 0.5 }]} />
                 </View>
             ))}
+        </View>
+        <View style={{ alignItems: 'flex-end' }}>
+            <View style={[styles.skeletonText, { width: 160, height: 46, marginTop: 20, borderRadius: 20}]} />
         </View>
     </View>
 );
@@ -103,6 +108,12 @@ const MonthPage = ({
     const displayMonth = monthDate.toLocaleString('default', { month: 'long' }).toUpperCase();
     const displayYear = monthDate.getFullYear();
     const displayDayName = today.toLocaleString('default', { weekday: 'short' });
+    const router = useRouter();
+
+    const handleMonthlyStats = () => {
+        const yearMonth = `${monthDate.getFullYear()}-${(monthDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        router.push(`/stats?month=${yearMonth}`);
+    };
 
     return (
         <View style={{ width: windowWidth, paddingHorizontal: 24 }}>
@@ -138,6 +149,7 @@ const MonthPage = ({
                     </View>
                 ))}
             </View>
+            <AppButton text="Monthly Stats" style={{ backgroundColor: '#ffffff' }} onPress={handleMonthlyStats} />
         </View>
     );
 };
@@ -182,8 +194,8 @@ export default function CalendarScreen() {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: DARK }]}>
-            <HeaderButtons />
+        <ThemedView style={styles.container}>
+            <HeaderButtons buttonsStyle="light" />
 
             <View style={styles.content}>
                 <FlatList
@@ -201,7 +213,7 @@ export default function CalendarScreen() {
                     })}
                     onScroll={onScroll}
                     scrollEventThrottle={16}
-                    style={{ flexGrow: 1, marginHorizontal: -24 }}
+                    style={{ flex: 1, marginHorizontal: -24 }}
                     renderItem={({ index }) => (
                         <MonthPage
                             index={index}
@@ -213,27 +225,22 @@ export default function CalendarScreen() {
                     )}
                 />
             </View>
-        </View>
+            
+        </ThemedView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingBottom: 30,
-        justifyContent: 'space-between',
-    },
-    header: {
-        marginTop: 40,
-        paddingHorizontal: 24,
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        alignItems: 'center',
+        gap: 20,
+        paddingBottom: 40
     },
     content: {
-        paddingHorizontal: 24,
-        paddingBottom: 40,
+        flex: 1,
         flexDirection: 'column',
+        justifyContent: 'flex-end',
+        paddingHorizontal: 24
     },
     bigDate: {
         fontSize: 120,
