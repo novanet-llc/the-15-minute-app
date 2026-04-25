@@ -1,14 +1,11 @@
 import { AppButton } from '@/components/app-button';
 import { HeaderButtons } from '@/components/header-buttons';
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors } from '@/constants/colors';
 import { analyzeDay } from '@/services/api';
 import { getActivitiesForDate } from '@/services/storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
-import Markdown from 'react-native-markdown-display';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function AnalyseScreen() {
@@ -44,6 +41,15 @@ export default function AnalyseScreen() {
     };
 
     return (
+        <ThemedView style={styles.container}>
+            <HeaderButtons buttonsStyle="light" />
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+                <AppButton text="Back to Day" onPress={handleBack} />
+            </View>
+        </ThemedView>
+    )
+
+    /* return (
         <ThemedView style={styles.container}>
             <HeaderButtons buttonsStyle="light" />
 
@@ -90,7 +96,7 @@ export default function AnalyseScreen() {
                 <AppButton text="Back to Day" onPress={handleBack} />
             </View>
         </ThemedView>
-    );
+    ); */
 }
 
 const styles = StyleSheet.create({

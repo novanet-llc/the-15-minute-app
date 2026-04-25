@@ -29,12 +29,12 @@ export function AppButton({ text, onPress, style }: AppButtonProps) {
 const styles = StyleSheet.create({
     button: {
         alignSelf: 'flex-end',
-        paddingVertical: 12,
-        paddingHorizontal: 32,
+        paddingVertical: 10,
+        paddingHorizontal: 24,
         borderRadius: 24,
         marginTop: 24,
     },
     buttonText: {
-        fontSize: 18,
+        fontSize: 14,
     },
 });

@@ -66,9 +66,9 @@ export default function DayViewScreen() {
         router.push(`/calendar/${date}/select-activity?timeSlot=${time}`);
     };
 
-    const AnalyseHandler = () => {
-        router.push(`/analyse/${date}`);
-    };
+    //const AnalyseHandler = () => {
+    //    router.push(`/analyse/${date}`);
+    //};
 
     const updateSelection = (y: number) => {
         const currentIndex = Math.min(Math.max(0, Math.floor(y / SLOT_HEIGHT)), timeSlots.length - 1);
@@ -167,7 +167,7 @@ export default function DayViewScreen() {
 
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginHorizontal: 24, gap: 10 }}>
                 <AppButton text="Back" onPress={BackHandler} />
-                <AppButton text="Analyse" onPress={AnalyseHandler} style={{ backgroundColor: Colors.background.light }} />
+                {/*<AppButton text="Analyse" onPress={AnalyseHandler} style={{ backgroundColor: Colors.background.light }} />*/}
             </View>
         </ThemedView>
     );

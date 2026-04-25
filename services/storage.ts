@@ -81,6 +81,29 @@ export async function getMonthlyActivitiesForMonth(yearMonth: string): Promise<M
 }
 
 /**
+ * List stored activity months based on saved monthly JSON files
+ * @returns Sorted month ids in YYYY-MM format
+ */
+export async function listStoredActivityMonths(): Promise<string[]> {
+    await ensureStorageDirectory();
+
+    try {
+        const files = await FileSystem.readDirectoryAsync(STORAGE_DIR);
+
+        return files
+            .map(fileName => {
+                const match = fileName.match(/^activities-(\d{4}-\d{2})\.json$/);
+                return match?.[1] ?? null;
+            })
+            .filter((value): value is string => value !== null)
+            .sort();
+    } catch (error) {
+        console.error('Error listing monthly activities:', error);
+        return [];
+    }
+}
+
+/**
  * Get initial activities for a new day
  * @returns Default activities (Sleep slots)
  */

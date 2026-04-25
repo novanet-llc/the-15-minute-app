@@ -188,6 +188,11 @@ export default function CalendarScreen() {
 
     const router = useRouter();
 
+    const activeMonth = useMemo(() => {
+        const monthDate = new Date(today.getFullYear(), today.getMonth() + viewingMonthOffset, 1);
+        return `${monthDate.getFullYear()}-${(monthDate.getMonth() + 1).toString().padStart(2, '0')}`;
+    }, [today, viewingMonthOffset]);
+
     const handleDayPress = (date: Date) => {
         const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
         router.push(`/calendar/${dateStr}`);
@@ -195,7 +200,7 @@ export default function CalendarScreen() {
 
     return (
         <ThemedView style={styles.container}>
-            <HeaderButtons buttonsStyle="light" />
+            <HeaderButtons buttonsStyle="light" activeMonth={activeMonth} />
 
             <View style={styles.content}>
                 <FlatList

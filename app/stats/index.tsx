@@ -133,6 +133,7 @@ export default function MonthlyStatsScreen() {
 
 	const monthId = useMemo(() => normalizeMonthParam(month), [month]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [hasMonthData, setHasMonthData] = useState(false);
 	const [categoryStats, setCategoryStats] = useState<CategoryStats>({
 		UPKEEP: 0,
 		WORK: 0,
@@ -146,6 +147,7 @@ export default function MonthlyStatsScreen() {
 		const loadStats = async () => {
 			setIsLoading(true);
 			const monthlyActivities = await getMonthlyActivitiesForMonth(monthId);
+			const monthHasEntries = Object.keys(monthlyActivities).length > 0;
 			const totals: CategoryStats = {
 				UPKEEP: 0,
 				WORK: 0,
@@ -163,6 +165,7 @@ export default function MonthlyStatsScreen() {
 			});
 
 			if (isMounted) {
+				setHasMonthData(monthHasEntries);
 				setCategoryStats(totals);
 				setIsLoading(false);
 			}
@@ -217,6 +220,10 @@ export default function MonthlyStatsScreen() {
 
 				{isLoading ? (
 					<StatsSkeleton size={pieSize} />
+				) : !hasMonthData ? (
+					<View style={styles.emptyStateContainer}>
+						<ThemedText style={styles.emptyStateTitle}>Start filling your days!</ThemedText>
+					</View>
 				) : (
 					<View style={styles.statsContainer}>
 						<View style={[styles.pieWrapper, { width: pieSize, height: pieSize, borderRadius: pieSize / 2, padding: PIE_PADDING }]}>
@@ -298,6 +305,25 @@ const styles = StyleSheet.create({
 	statsContainer: {
 		alignItems: 'center',
 		gap: 24,
+	},
+	emptyStateContainer: {
+		alignItems: 'center',
+		gap: 8,
+		paddingHorizontal: 24,
+		marginBottom: 24,
+	},
+	emptyStateTitle: {
+		fontSize: 24,
+		fontFamily: 'Geist-Bold',
+		color: Colors.text.light,
+		textAlign: 'center',
+	},
+	emptyStateText: {
+		fontFamily: 'GeistMono-Light',
+		fontSize: 12,
+		color: Colors.text.light,
+		textAlign: 'center',
+		opacity: 0.8,
 	},
 	pieWrapper: {
 		backgroundColor: Colors.background.dark,

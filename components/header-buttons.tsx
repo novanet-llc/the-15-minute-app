@@ -1,4 +1,5 @@
 import { Colors } from '@/constants/colors';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,27 +12,52 @@ const BG_DARK_GREY = Colors.background.darkGrey;
 interface HeaderButtonsProps {
     style?: ViewStyle;
     buttonsStyle?: 'dark' | 'light';
-    onBlobPress?: () => void;
-    onGridPress?: () => void;
+    activeMonth?: string;
 }
 
-export function HeaderButtons({ style, buttonsStyle = 'dark', onBlobPress, onGridPress }: HeaderButtonsProps) {
+function normalizeMonth(value: string | string[] | undefined): string | null {
+    const raw = Array.isArray(value) ? value[0] : value;
+
+    if (!raw) return null;
+    if (/^\d{4}-\d{2}$/.test(raw)) return raw;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw.slice(0, 7);
+
+    return null;
+}
+
+export function HeaderButtons({ style, buttonsStyle = 'dark', activeMonth}: HeaderButtonsProps) {
     const insets = useSafeAreaInsets();
+    const router = useRouter();
+    const params = useLocalSearchParams<{ date?: string | string[]; month?: string | string[] }>();
 
     let backgroundColor = BG_DARK;
     if (buttonsStyle === 'light') {
         backgroundColor = BG_DARK_GREY;
     }
 
+    const resolvedMonth =
+        normalizeMonth(activeMonth) ??
+        normalizeMonth(params.month) ??
+        normalizeMonth(params.date) ??
+        `${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}`;
+
+    const handleGridPress = () => {
+        router.push(`/stats?month=${resolvedMonth}`);
+    };
+
+    const handleBlobPress = () => {
+        router.push('/profile');
+    }
+
     return (
         <View style={[styles.header, { paddingTop: insets.top + 10 }, style]}>
             <View style={styles.headerButtons}>
-                <TouchableOpacity style={[styles.iconButton, styles.blobIconButton, { backgroundColor }]} onPress={onBlobPress}>
+                <TouchableOpacity style={[styles.iconButton, styles.blobIconButton, { backgroundColor }]} onPress={handleBlobPress}>
                     <View style={styles.blobIcon}>
                         <View style={styles.blobInner} />
                     </View>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.iconButton, { backgroundColor }]} onPress={onGridPress}>
+                <TouchableOpacity style={[styles.iconButton, { backgroundColor }]} onPress={handleGridPress}>
                     <View style={styles.gridIcon}>
                         <View style={styles.dotRow}>
                             <View style={styles.dot} />
