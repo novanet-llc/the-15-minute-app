@@ -42,7 +42,7 @@ export function HeaderButtons({ style, buttonsStyle = 'dark', activeMonth}: Head
         `${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}`;
 
     const handleGridPress = () => {
-        router.push(`/stats?month=${resolvedMonth}`);
+        router.push(`/calendar`);
     };
 
     const handleBlobPress = () => {

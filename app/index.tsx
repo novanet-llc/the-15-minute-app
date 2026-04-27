@@ -35,7 +35,7 @@ export default function LandingScreen() {
             />
 
             <ThemedView style={styles.subtitleContainer}>
-                <ThemedText type="p" style={styles.subtitle}>
+                <ThemedText type="p" style={styles.textRight}>
                     The perfect time tracker if you are aim to join to the productivity tribe.
                     Check your spent effort anytime and so you can eliminate the unnecessary timetraps.
                 </ThemedText>
@@ -50,12 +50,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 24,
+        gap: 20,
         justifyContent: 'flex-end', // Content aligns to the bottom
         paddingBottom: 60,
-    },
-    contentContainer: {
-        width: '100%',
-        gap: 10,
     },
     title: {
         textAlign: 'left',
@@ -74,5 +71,8 @@ const styles = StyleSheet.create({
         maxWidth: '80%',
         opacity: 0.9,
         fontSize: 16,
+    },
+    textRight: {
+        textAlign: 'right',
     },
 });

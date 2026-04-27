@@ -121,8 +121,8 @@ export default function SelectActivityScreen() {
                 />
 
                 <ThemedView style={styles.subtitleContainer}>
-                    <ThemedText type="p" style={styles.subtitle}>
-                        These are the most common things you do in a day. Keep attention to their ratio. You maybe want to add others, but why?
+                    <ThemedText type="p" style={styles.textRight}>
+                        These are the most common things you do in a day. Tap one to see more.
                     </ThemedText>
                 </ThemedView>
             </View>
@@ -193,5 +193,8 @@ const styles = StyleSheet.create({
         maxWidth: '80%',
         opacity: 0.9,
         fontSize: 16,
+    },
+    textRight: {
+        textAlign: 'right',
     },
 });

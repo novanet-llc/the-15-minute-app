@@ -48,12 +48,12 @@ const styles = StyleSheet.create({
   },
   h3: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Geist-ExtraLight',
     lineHeight: 20,
   },
   h4: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'Geist-ExtraLight',
     lineHeight: 16,
   },
   p: {

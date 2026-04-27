@@ -1,23 +1,25 @@
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/colors';
 import React from 'react';
-import { StyleSheet, TouchableOpacity, type ViewStyle } from 'react-native';
+import { StyleSheet, TouchableOpacity, type StyleProp, type ViewStyle } from 'react-native';
 
 interface AppButtonProps {
     text: string;
     onPress: () => void;
-    style?: ViewStyle;
+    style?: StyleProp<ViewStyle>;
+    disabled?: boolean;
 }
 
-export function AppButton({ text, onPress, style }: AppButtonProps) {
+export function AppButton({ text, onPress, style, disabled = false }: AppButtonProps) {
     const buttonColor = Colors.landing.buttonBackground;
     const buttonTextColor = Colors.landing.buttonText;
 
     return (
         <TouchableOpacity
-            style={[styles.button, { backgroundColor: buttonColor }, style]}
+            style={[styles.button, { backgroundColor: buttonColor }, disabled && styles.buttonDisabled, style]}
             onPress={onPress}
             activeOpacity={0.8}
+            disabled={disabled}
         >
             <ThemedText type="p" style={[styles.buttonText, { color: buttonTextColor }]}>
                 {text}
@@ -36,5 +38,8 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         fontSize: 14,
+    },
+    buttonDisabled: {
+        opacity: 0.6,
     },
 });

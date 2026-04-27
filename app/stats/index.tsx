@@ -20,8 +20,8 @@ const CATEGORY_ORDER: ActivityCategory[] = [
 ];
 
 const SKELETON_COLOR = '#9e9e9eff';
-const BASE_PIE_SIZE = 240;
-const PIE_PADDING = 6;
+const BASE_PIE_SIZE = 180;
+const PIE_PADDING = 0;
 const PIE_GAP = 8;
 const SLICE_INNER_CORNER_RADIUS = 10;
 
@@ -45,7 +45,7 @@ function getMonthLabel(yearMonth: string): string {
 	const [year, month] = yearMonth.split('-').map(Number);
 	if (!year || !month) return yearMonth;
 	const date = new Date(year, month - 1, 1);
-	return date.toLocaleString('default', { month: 'long', year: 'numeric' }).toUpperCase();
+	return date.toLocaleString('default', { month: 'long', year: 'numeric' });
 }
 
 function normalizeMonthParam(param: string | string[] | undefined): string {
@@ -103,12 +103,20 @@ function getCircleOffset(position: SlicePosition, size: number) {
 
 const StatsSkeleton = ({ size }: { size: number }) => (
 	<View style={styles.skeletonContainer}>
+		<View style={styles.skeletonLabels}>
+			{Array.from({ length: 2 }).map((_, index) => (
+				<View key={`top-${index}`} style={[styles.skeletonLabelGroup, index === 1 && styles.skeletonLabelGroupRight]}>
+					<View style={[styles.skeletonLine, index === 1 && styles.skeletonLineRight]} />
+					<View style={[styles.skeletonLine, styles.skeletonLineLong, index === 1 && styles.skeletonLineRight]} />
+				</View>
+			))}
+		</View>
 		<View style={[styles.skeletonCircle, { width: size, height: size, borderRadius: size / 2 }]} />
 		<View style={styles.skeletonLabels}>
-			{Array.from({ length: 4 }).map((_, index) => (
-				<View key={index} style={styles.skeletonLabelGroup}>
-					<View style={styles.skeletonLine} />
-					<View style={[styles.skeletonLine, { width: 120 }]} />
+			{Array.from({ length: 2 }).map((_, index) => (
+				<View key={`bottom-${index}`} style={[styles.skeletonLabelGroup, index === 1 && styles.skeletonLabelGroupRight]}>
+					<View style={[styles.skeletonLine, index === 1 && styles.skeletonLineRight]} />
+					<View style={[styles.skeletonLine, styles.skeletonLineLong, index === 1 && styles.skeletonLineRight]} />
 				</View>
 			))}
 		</View>
@@ -124,7 +132,7 @@ export default function MonthlyStatsScreen() {
 	// Target at least 2x the original chart size, but don't exceed available screen width.
 	const pieSize = useMemo(() => {
 		const desired = BASE_PIE_SIZE * 2;
-		const maxFit = Math.max(220, windowWidth - 48);
+		const maxFit = Math.max(180, windowWidth - 48);
 		return Math.min(desired, maxFit);
 	}, [windowWidth]);
 	const pieInnerSize = pieSize - PIE_PADDING * 2;
@@ -181,7 +189,7 @@ export default function MonthlyStatsScreen() {
 	const totalSlots = Object.values(categoryStats).reduce((sum, value) => sum + value, 0);
 	const categories = CATEGORY_ORDER.map(category => {
 		const count = categoryStats[category];
-		const percent = totalSlots > 0 ? Math.round((count / totalSlots) * 100) : 0;
+		const percent = totalSlots > 0 ? Math.round((count / totalSlots) * 1000) / 10 : 0;
 		return {
 			key: category,
 			label: ACTIVITY_CATEGORIES[category].text,
@@ -190,6 +198,8 @@ export default function MonthlyStatsScreen() {
 			count
 		};
 	});
+	const topLabels = categories.slice(0, 2);
+	const bottomLabels = categories.slice(2);
 
 	const quadrantSlices = useMemo(() => {
 		const positions: Record<ActivityCategory, SlicePosition> = {
@@ -211,21 +221,42 @@ export default function MonthlyStatsScreen() {
 		});
 	}, [categories, pieCenter, sliceMaxSize]);
 
+	const toCalendar = () => {
+		router.push(`/calendar?month=${monthId}`);
+	};
+
 	return (
 		<ThemedView style={[styles.container, { paddingBottom: Math.max(40, insets.bottom) }]}>
 			<HeaderButtons buttonsStyle="light" />
 
 			<View style={styles.content}>
-				<ThemedText style={styles.title}>{getMonthLabel(monthId)}</ThemedText>
+				<ThemedText type="h3">
+					// {getMonthLabel(monthId)}
+				</ThemedText>
+
+				<ThemedView
+					style={styles.divider}
+					lightColor={Colors.landing.dividerLight}
+					darkColor={Colors.landing.dividerDark}
+				/>
 
 				{isLoading ? (
 					<StatsSkeleton size={pieSize} />
 				) : !hasMonthData ? (
 					<View style={styles.emptyStateContainer}>
-						<ThemedText style={styles.emptyStateTitle}>Start filling your days!</ThemedText>
+						<ThemedText type="p">Start filling your days!</ThemedText>
 					</View>
 				) : (
 					<View style={styles.statsContainer}>
+						<View style={styles.labelsGrid}>
+							{topLabels.map((item, index) => (
+								<View key={item.key} style={[styles.labelItem, index === 1 && styles.labelItemRight]}>
+									<ThemedText type="h3" style={index === 1 && styles.labelTextRight}>{item.percent.toFixed(1)}%</ThemedText>
+									<ThemedText type="h3" style={index === 1 && styles.labelTextRight}>// {item.label}</ThemedText>
+								</View>
+							))}
+						</View>
+
 						<View style={[styles.pieWrapper, { width: pieSize, height: pieSize, borderRadius: pieSize / 2, padding: PIE_PADDING }]}>
 							<View style={[styles.pieInner, { borderRadius: pieInnerSize / 2 }]}>
 								{totalSlots === 0 ? (
@@ -269,17 +300,17 @@ export default function MonthlyStatsScreen() {
 						</View>
 
 						<View style={styles.labelsGrid}>
-							{categories.map(item => (
-								<View key={item.key} style={styles.labelItem}>
-									<ThemedText type="p" style={styles.percentText}>{item.percent}%</ThemedText>
-									<ThemedText type="p" style={styles.labelText}>{item.label}</ThemedText>
+							{bottomLabels.map((item, index) => (
+								<View key={item.key} style={[styles.labelItem, index === 1 && styles.labelItemRight]}>
+									<ThemedText type="h3" style={index === 1 && styles.labelTextRight}>{item.percent.toFixed(1)}%</ThemedText>
+									<ThemedText type="h3" style={index === 1 && styles.labelTextRight}>//{item.label}</ThemedText>
 								</View>
 							))}
 						</View>
 					</View>
 				)}
 
-				<AppButton text="Back" onPress={() => router.back()} />
+				<AppButton text="Back" onPress={toCalendar} />
 			</View>
 		</ThemedView>
 	);
@@ -288,29 +319,24 @@ export default function MonthlyStatsScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		gap: 20,
 	},
 	content: {
 		flex: 1,
+		gap: 12,
 		justifyContent: 'center',
-		alignItems: 'center',
 		paddingHorizontal: 24,
 	},
-	title: {
-		fontSize: 18,
-		fontFamily: 'Geist-Bold',
-		color: Colors.text.light,
-		marginBottom: 24,
-	},
+    divider: {
+        height: 1,
+        width: '100%',
+        marginBottom: 12,
+    },
 	statsContainer: {
 		alignItems: 'center',
-		gap: 24,
 	},
 	emptyStateContainer: {
-		alignItems: 'center',
+		alignItems: 'flex-end',
 		gap: 8,
-		paddingHorizontal: 24,
-		marginBottom: 24,
 	},
 	emptyStateTitle: {
 		fontSize: 24,
@@ -348,7 +374,6 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		flexWrap: 'wrap',
 		justifyContent: 'space-between',
-		rowGap: 16,
 	},
 	emptyPie: {
 		width: '100%',
@@ -359,15 +384,11 @@ const styles = StyleSheet.create({
 		width: '48%',
 		gap: 4,
 	},
-	percentText: {
-		fontFamily: 'Geist-Bold',
-		fontSize: 16,
-		color: Colors.text.light,
+	labelItemRight: {
+		alignItems: 'flex-end',
 	},
-	labelText: {
-		fontFamily: 'GeistMono-Light',
-		fontSize: 12,
-		color: Colors.text.light,
+	labelTextRight: {
+		textAlign: 'right',
 	},
 	skeletonContainer: {
 		alignItems: 'center',
@@ -391,11 +412,20 @@ const styles = StyleSheet.create({
 		width: '48%',
 		gap: 6,
 	},
+	skeletonLabelGroupRight: {
+		alignItems: 'flex-end',
+	},
 	skeletonLine: {
 		height: 14,
 		width: 60,
 		borderRadius: 8,
 		backgroundColor: SKELETON_COLOR,
 		opacity: 0.5,
+	},
+	skeletonLineLong: {
+		width: 120,
+	},
+	skeletonLineRight: {
+		alignSelf: 'flex-end',
 	},
 });

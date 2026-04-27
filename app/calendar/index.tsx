@@ -4,7 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/colors';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +13,25 @@ const ORANGE = Colors.calendar.orange;
 const BEIGE = Colors.calendar.beige;
 const DARK = Colors.calendar.dark;
 const LIGHT = Colors.calendar.light;
+
+function normalizeMonthParam(param: string | string[] | undefined): string {
+    const raw = Array.isArray(param) ? param[0] : param;
+    if (raw && /^\d{4}-\d{2}$/.test(raw)) return raw;
+
+    const now = new Date();
+    return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+}
+
+function getMonthOffset(baseDate: Date, monthId: string): number {
+    const [year, month] = monthId.split('-').map(Number);
+    if (!year || !month) return 0;
+
+    return (year - baseDate.getFullYear()) * 12 + (month - 1 - baseDate.getMonth());
+}
+
+function clampMonthOffset(offset: number, initialIndex: number, pageCount: number): number {
+    return Math.max(-initialIndex, Math.min(pageCount - initialIndex - 1, offset));
+}
 
 // Types for day items
 type DayStatus = 'past' | 'today' | 'future';
@@ -155,6 +174,7 @@ const MonthPage = ({
 };
 
 export default function CalendarScreen() {
+    const { month } = useLocalSearchParams<{ month?: string }>();
     const insets = useSafeAreaInsets();
     const { width: windowWidth } = useWindowDimensions();
     const { dark } = useTheme();
@@ -162,19 +182,25 @@ export default function CalendarScreen() {
     const theme = Colors[colorScheme];
     const flatListRef = useRef<FlatList>(null);
 
-    const [today, setToday] = useState(new Date());
-    const [viewingMonthOffset, setViewingMonthOffset] = useState(0);
-
     const PAGE_COUNT = 120;
     const INITIAL_INDEX = 60;
+    const requestedMonthId = useMemo(() => normalizeMonthParam(month), [month]);
+
+    const [today, setToday] = useState(new Date());
+    const [viewingMonthOffset, setViewingMonthOffset] = useState(() => {
+        const now = new Date();
+        return clampMonthOffset(getMonthOffset(now, requestedMonthId), INITIAL_INDEX, PAGE_COUNT);
+    });
+    const initialMonthIndex = INITIAL_INDEX + viewingMonthOffset;
 
     useFocusEffect(
         useCallback(() => {
             const now = new Date();
+            const clampedOffset = clampMonthOffset(getMonthOffset(now, requestedMonthId), INITIAL_INDEX, PAGE_COUNT);
             setToday(now);
-            setViewingMonthOffset(0);
-            flatListRef.current?.scrollToIndex({ index: INITIAL_INDEX, animated: false });
-        }, [])
+            setViewingMonthOffset(clampedOffset);
+            flatListRef.current?.scrollToIndex({ index: INITIAL_INDEX + clampedOffset, animated: false });
+        }, [requestedMonthId])
     );
 
     const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -210,7 +236,7 @@ export default function CalendarScreen() {
                     showsHorizontalScrollIndicator={false}
                     data={Array.from({ length: PAGE_COUNT })}
                     keyExtractor={(_, i) => i.toString()}
-                    initialScrollIndex={INITIAL_INDEX}
+                    initialScrollIndex={initialMonthIndex}
                     getItemLayout={(_, index) => ({
                         length: windowWidth,
                         offset: windowWidth * index,

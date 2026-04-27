@@ -26,7 +26,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="calendar" />
-            <Stack.Screen name="profile" />
+            <Stack.Screen name="profile/index" />
             {/* <Stack.Screen name="analyse/[date]" /> */}
           </Stack>
           <StatusBar style="light" />

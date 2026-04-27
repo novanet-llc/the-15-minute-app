@@ -138,6 +138,12 @@ export default function DayViewScreen() {
     };
 
     const BackHandler = () => {
+        const monthId = typeof date === 'string' ? date.slice(0, 7) : '';
+        if (monthId && /^\d{4}-\d{2}$/.test(monthId)) {
+            router.push(`/calendar?month=${monthId}`);
+            return;
+        }
+
         router.push('/calendar');
     };
 

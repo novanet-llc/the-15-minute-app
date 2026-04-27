@@ -1,40 +1,75 @@
 import { AppButton } from '@/components/app-button';
+import { AppPicker } from '@/components/app-picker';
 import { HeaderButtons } from '@/components/header-buttons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/colors';
+import {
+    MONTH_SEED_PRESETS,
+    clearAllActivities,
+    getPreviousMonthId,
+    seedMonthActivities,
+    type SeedPreset,
+} from '@/services/storage';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
     Modal,
     Pressable,
-    ScrollView,
     StyleSheet,
-    TouchableOpacity,
     View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { exportActivitiesWorkbook, getExportOptions } from '../../services/export';
 
-type ExportPickerMode = 'root' | 'year' | 'month';
+const MONTH_OPTIONS = [
+    { label: 'All', value: 'all' },
+    { label: 'January', value: '01' },
+    { label: 'February', value: '02' },
+    { label: 'March', value: '03' },
+    { label: 'April', value: '04' },
+    { label: 'May', value: '05' },
+    { label: 'June', value: '06' },
+    { label: 'July', value: '07' },
+    { label: 'August', value: '08' },
+    { label: 'September', value: '09' },
+    { label: 'October', value: '10' },
+    { label: 'November', value: '11' },
+    { label: 'December', value: '12' },
+];
+
+function getSeedMonthLabel(yearMonth: string): string {
+    const [year, month] = yearMonth.split('-');
+    const monthLabel = MONTH_OPTIONS.find(option => option.value === month)?.label ?? month;
+    return `${monthLabel} ${year}`;
+}
 
 export default function ProfileScreen() {
     const insets = useSafeAreaInsets();
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [pickerMode, setPickerMode] = useState<ExportPickerMode>('root');
-    const [availableMonths, setAvailableMonths] = useState<string[]>([]);
+    const [isSeedModalVisible, setIsSeedModalVisible] = useState(false);
     const [availableYears, setAvailableYears] = useState<string[]>([]);
     const [isLoadingOptions, setIsLoadingOptions] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [isSeeding, setIsSeeding] = useState(false);
+    const [isRemovingAllData, setIsRemovingAllData] = useState(false);
+    const [selectedYear, setSelectedYear] = useState('');
+    const [selectedMonth, setSelectedMonth] = useState('all');
+    const [selectedSeedPreset, setSelectedSeedPreset] = useState<SeedPreset>('balanced');
+    const seedMonth = getPreviousMonthId();
+    const seedMonthLabel = getSeedMonthLabel(seedMonth);
 
     const loadExportOptions = async () => {
         setIsLoadingOptions(true);
 
         try {
             const options = await getExportOptions();
-            setAvailableMonths(options.months);
             setAvailableYears(options.years);
+
+            if (options.years.length > 0) {
+                setSelectedYear(current => current || options.years[options.years.length - 1]);
+            }
         } catch {
             Alert.alert('Export failed', 'Could not load available activity data.');
         } finally {
@@ -43,7 +78,7 @@ export default function ProfileScreen() {
     };
 
     const handleOpenExportModal = async () => {
-        setPickerMode('root');
+        setSelectedMonth('all');
         setIsModalVisible(true);
         await loadExportOptions();
     };
@@ -52,16 +87,36 @@ export default function ProfileScreen() {
         if (isExporting) return;
 
         setIsModalVisible(false);
-        setPickerMode('root');
+        setSelectedMonth('all');
     };
 
-    const handleExport = async (type: 'year' | 'month', value: string) => {
+    const handleOpenSeedModal = () => {
+        setIsSeedModalVisible(true);
+    };
+
+    const handleCloseSeedModal = () => {
+        if (isSeeding) return;
+
+        setIsSeedModalVisible(false);
+    };
+
+    const handleExport = async () => {
+        if (!selectedYear) {
+            Alert.alert('Export failed', 'Select a year first.');
+            return;
+        }
+
         setIsExporting(true);
 
         try {
-            await exportActivitiesWorkbook({ type, value });
+            if (selectedMonth === 'all') {
+                await exportActivitiesWorkbook({ type: 'year', value: selectedYear });
+            } else {
+                await exportActivitiesWorkbook({ type: 'month', value: `${selectedYear}-${selectedMonth}` });
+            }
+
             setIsModalVisible(false);
-            setPickerMode('root');
+            setSelectedMonth('all');
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Could not export your data.';
             Alert.alert('Export failed', message);
@@ -70,11 +125,55 @@ export default function ProfileScreen() {
         }
     };
 
-    const selectionItems = pickerMode === 'year' ? availableYears : availableMonths;
+    const handleSeedMonth = async () => {
+        setIsSeeding(true);
+
+        try {
+            await seedMonthActivities({
+                yearMonth: seedMonth,
+                preset: selectedSeedPreset,
+            });
+
+            setIsSeedModalVisible(false);
+            Alert.alert('Seed complete', `Created ${selectedSeedPreset} test data for ${seedMonthLabel}.`);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Could not seed local activity data.';
+            Alert.alert('Seeding failed', message);
+        } finally {
+            setIsSeeding(false);
+        }
+    };
+
+    const handleRemoveAllData = () => {
+        Alert.alert('Remove all data', 'This will delete every saved activity month on this device.', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Remove all data',
+                style: 'destructive',
+                onPress: async () => {
+                    setIsRemovingAllData(true);
+
+                    try {
+                        await clearAllActivities();
+                        setIsSeedModalVisible(false);
+                        setIsModalVisible(false);
+                        Alert.alert('All data removed', 'Deleted all locally stored activity data.');
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Could not remove local activity data.';
+                        Alert.alert('Remove failed', message);
+                    } finally {
+                        setIsRemovingAllData(false);
+                    }
+                },
+            },
+        ]);
+    };
+
+    const yearOptions = availableYears.map(year => ({ label: year, value: year }));
 
 	return (
-	        <ThemedView style={[styles.container, { paddingBottom: Math.max(40, insets.bottom) }]}>
-            <HeaderButtons buttonsStyle="light" style={{margin: 0, padding: 0}}/>
+        <ThemedView style={styles.container}>
+            <HeaderButtons buttonsStyle="light"/>
 
             <View style={styles.content}>
                 <ThemedText type="h1" style={styles.title}>
@@ -88,77 +187,127 @@ export default function ProfileScreen() {
                 />
 
                 <ThemedView style={styles.subtitleContainer}>
-                    <ThemedText type="p" style={styles.subtitle}>
-                        You can export your data for further use in sheet format.
+                    <ThemedText type="p" style={styles.textRight}>
+                        You can export your data in sheet format for further use.
                     </ThemedText>
                 </ThemedView>
 
                 <AppButton text={isExporting ? 'Exporting...' : 'Export my data'} onPress={handleOpenExportModal} />
+                {__DEV__ ? (
+                    <View style={styles.devButtonRow}>
+                        <AppButton
+                            text={isSeeding ? 'Seeding...' : 'Seed test month'}
+                            onPress={handleOpenSeedModal}
+                            style={[styles.secondaryButton, styles.devActionButton]}
+                            disabled={isRemovingAllData}
+                        />
+                        <AppButton
+                            text={isRemovingAllData ? 'Removing...' : 'Remove all data'}
+                            onPress={handleRemoveAllData}
+                            style={[styles.secondaryButton, styles.devActionButton, styles.destructiveButton]}
+                            disabled={isSeeding || isRemovingAllData}
+                        />
+                    </View>
+                ) : null}
             </View>
 
             <Modal animationType="fade" transparent visible={isModalVisible} onRequestClose={handleCloseModal}>
-                <Pressable style={styles.modalBackdrop} onPress={handleCloseModal}>
-                    <Pressable style={styles.modalCard} onPress={event => event.stopPropagation()}>
-                        <ThemedText type="h4" style={styles.modalTitle}>
+                <View style={styles.modalBackdrop}>
+                    <Pressable style={styles.backdropDismissArea} onPress={handleCloseModal} />
+                    <View style={styles.modalCard}>
+                        <ThemedText type="h3" style={styles.modalTitle}>
                             Export activity data
                         </ThemedText>
+
+                        <ThemedView
+                            style={styles.divider}
+                            lightColor={Colors.landing.dividerLight}
+                            darkColor={Colors.landing.dividerDark}
+                        />
 
                         {isLoadingOptions ? (
                             <View style={styles.loadingState}>
                                 <ActivityIndicator color={Colors.text.light} />
-                                <ThemedText type="p" style={styles.modalText}>
+                                <ThemedText type="p" style={styles.textRight}>
                                     Loading available data...
                                 </ThemedText>
                             </View>
-                        ) : availableMonths.length === 0 ? (
+                        ) : availableYears.length === 0 ? (
                             <View style={styles.loadingState}>
-                                <ThemedText type="p" style={styles.modalText}>
+                                <ThemedText type="p" style={styles.textRight}>
                                     No saved activity data is available yet.
                                 </ThemedText>
                             </View>
-                        ) : pickerMode === 'root' ? (
-                            <View style={styles.optionGroup}>
-                                <TouchableOpacity style={styles.modalOption} onPress={() => setPickerMode('year')} activeOpacity={0.8}>
-                                    <ThemedText type="p" style={styles.modalOptionText}>
-                                        Select a year
-                                    </ThemedText>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.modalOption} onPress={() => setPickerMode('month')} activeOpacity={0.8}>
-                                    <ThemedText type="p" style={styles.modalOptionText}>
-                                        Select a month
-                                    </ThemedText>
-                                </TouchableOpacity>
-                            </View>
                         ) : (
-                            <>
-                                <TouchableOpacity style={styles.backOption} onPress={() => setPickerMode('root')} activeOpacity={0.8}>
-                                    <ThemedText type="p" style={styles.backOptionText}>
-                                        Back
-                                    </ThemedText>
-                                </TouchableOpacity>
-                                <ScrollView style={styles.selectionList} contentContainerStyle={styles.selectionListContent}>
-                                    {selectionItems.map(item => (
-                                        <TouchableOpacity
-                                            key={item}
-                                            style={styles.selectionOption}
-                                            onPress={() => handleExport(pickerMode, item)}
-                                            activeOpacity={0.8}
-                                            disabled={isExporting}
-                                        >
-                                            <ThemedText type="p" style={styles.selectionOptionText}>
-                                                {item}
-                                            </ThemedText>
-                                        </TouchableOpacity>
-                                    ))}
-                                </ScrollView>
-                            </>
-                        )}
+                            <View style={styles.controlsColumn}>
+                                <View style={styles.dropdownRow}>
+                                    <AppPicker
+                                        options={yearOptions}
+                                        selectedValue={selectedYear}
+                                        onValueChange={setSelectedYear}
+                                        style={styles.dropdown}
+                                        enabled={!isExporting}
+                                    />
+                                    <AppPicker
+                                        options={MONTH_OPTIONS}
+                                        selectedValue={selectedMonth}
+                                        onValueChange={setSelectedMonth}
+                                        style={styles.dropdown}
+                                        enabled={!isExporting}
+                                    />
+                                </View>
 
-                        <TouchableOpacity style={styles.cancelOption} onPress={handleCloseModal} activeOpacity={0.8} disabled={isExporting}>
-                            <ThemedText type="p" style={styles.cancelOptionText}>
-                                Cancel
-                            </ThemedText>
-                        </TouchableOpacity>
+                                <View style={styles.actionRow}>
+                                    <AppButton text="Cancel" onPress={handleCloseModal} style={styles.modalButton} disabled={isExporting} />
+                                    <AppButton text={isExporting ? 'Exporting...' : 'Export'} onPress={handleExport} style={[styles.modalButton, styles.exportButton]} disabled={isExporting || !selectedYear} />
+                                </View>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal animationType="fade" transparent visible={isSeedModalVisible} onRequestClose={handleCloseSeedModal}>
+                <Pressable style={styles.modalBackdrop} onPress={handleCloseSeedModal}>
+                    <Pressable style={styles.modalCard} onPress={event => event.stopPropagation()}>
+                        <ThemedText type="h3" style={styles.modalTitle}>
+                            Seed local test data
+                        </ThemedText>
+
+                        <ThemedView
+                            style={styles.divider}
+                            lightColor={Colors.landing.dividerLight}
+                            darkColor={Colors.landing.dividerDark}
+                        />
+
+                        <View style={styles.controlsColumn}>
+                            <ThemedView style={styles.subtitleContainer}>
+                                <ThemedText type="p" style={styles.textRight}>
+                                    Target month: {seedMonthLabel}
+                                </ThemedText>
+                            </ThemedView>
+
+                            <View style={styles.dropdownRowSingle}>
+                                <AppPicker
+                                    options={MONTH_SEED_PRESETS}
+                                    selectedValue={selectedSeedPreset}
+                                    onValueChange={value => setSelectedSeedPreset(value as SeedPreset)}
+                                    style={styles.dropdown}
+                                    enabled={!isSeeding}
+                                />
+                            </View>
+
+                            <ThemedView style={styles.subtitleContainer}>
+                                <ThemedText type="p" style={styles.textRight}>
+                                    This rewrites the previous real-life month inside Expo Go so calendar and export performance can be tested with deterministic data.
+                                </ThemedText>
+                            </ThemedView>
+
+                            <View style={styles.actionRow}>
+                                <AppButton text="Cancel" onPress={handleCloseSeedModal} style={styles.modalButton} disabled={isSeeding} />
+                                <AppButton text={isSeeding ? 'Seeding...' : 'Seed month'} onPress={handleSeedMonth} style={[styles.modalButton, styles.exportButton]} disabled={isSeeding} />
+                            </View>
+                        </View>
                     </Pressable>
                 </Pressable>
             </Modal>
@@ -169,13 +318,15 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
 	container: {
         flex: 1,
-        padding: 24,
         justifyContent: 'flex-end',
+        gap: 20,
+        paddingBottom: 60,
     },
     content: {
         flex: 1,
         flexDirection: 'column',
         justifyContent: 'flex-end',
+        paddingHorizontal: 24,
         gap: 12,
     },
     contentContainer: {
@@ -206,69 +357,77 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingHorizontal: 24,
     },
+    backdropDismissArea: {
+        ...StyleSheet.absoluteFillObject,
+    },
     modalCard: {
         backgroundColor: Colors.background.dark,
         borderRadius: 20,
         padding: 20,
-        gap: 16,
-        borderWidth: 1,
-        borderColor: Colors.background.darkGrey,
+        gap: 12,
+        minHeight: 190,
+        zIndex: 1,
     },
     modalTitle: {
-        textAlign: 'center',
-    },
-    modalText: {
-        textAlign: 'center',
-        opacity: 0.85,
+        fontWeight: 'normal',
     },
     loadingState: {
-        alignItems: 'center',
+        gap: 12,
+        width: '100%',
+        alignItems: 'flex-end',
         justifyContent: 'center',
-        gap: 12,
-        paddingVertical: 24,
+        flex: 1,
     },
-    optionGroup: {
-        gap: 12,
+    textRight: {
+        textAlign: 'right',
     },
-    modalOption: {
-        backgroundColor: Colors.background.darkGrey,
-        borderRadius: 14,
-        paddingVertical: 14,
-        paddingHorizontal: 16,
+    secondaryButton: {
+        marginTop: 0,
     },
-    modalOptionText: {
-        textAlign: 'center',
-        color: Colors.text.light,
-        fontFamily: 'Geist-Bold',
+    devButtonRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: 10,
+        flexWrap: 'wrap',
     },
-    backOption: {
-        alignSelf: 'flex-start',
+    devActionButton: {
+        marginTop: 0,
     },
-    backOptionText: {
-        opacity: 0.8,
+    destructiveButton: {
+        backgroundColor: '#D9534F',
     },
-    selectionList: {
-        maxHeight: 260,
+    controlsColumn: {
+        gap: 22,
+        paddingTop: 2,
     },
-    selectionListContent: {
+    dropdownRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: 10,
+        zIndex: 10,
+    },
+    dropdownRowSingle: {
+        justifyContent: 'flex-end',
+        alignItems: 'flex-end',
+        zIndex: 10,
+    },
+    dropdown: {
+        flex: 1,
+        maxWidth: 220,
+    },
+    actionRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
         gap: 10,
     },
-    selectionOption: {
-        backgroundColor: Colors.background.darkGrey,
-        borderRadius: 14,
-        paddingVertical: 14,
-        paddingHorizontal: 16,
+    modalButton: {
+        marginTop: 0,
+        paddingVertical: 10,
+        paddingHorizontal: 22,
     },
-    selectionOptionText: {
-        textAlign: 'center',
-        color: Colors.text.light,
-        fontFamily: 'Geist-Bold',
-    },
-    cancelOption: {
-        paddingTop: 4,
-    },
-    cancelOptionText: {
-        textAlign: 'center',
-        opacity: 0.8,
+    exportButton: {
+        backgroundColor: Colors.background.light,
     },
 });
