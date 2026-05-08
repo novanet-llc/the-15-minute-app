@@ -2,14 +2,76 @@ import { getMonthlyActivitiesForMonth, listStoredActivityMonths } from '@/servic
 import type { MonthlyActivities } from '@/types/activity';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 import * as XLSX from 'xlsx-js-style';
 
 export type ExportScope =
     | { type: 'month'; value: string }
     | { type: 'year'; value: string };
 
+export type ExportResult =
+    | { type: 'shared'; fileUri: string }
+    | { type: 'saved'; fileUri: string; fileName: string; reason: 'android-folder-export' | 'android-local-fallback' };
+
 const BORDER_COLOR = 'D0D0D0';
 const HEADER_FILL = 'F2F2F2';
+
+function getExportFileName(scope: ExportScope): string {
+    return `activities-${scope.value}.xlsx`;
+}
+
+function getFileNameWithoutExtension(fileName: string): string {
+    return fileName.replace(/\.xlsx$/i, '');
+}
+
+async function ensureExportDirectoryExists(directoryUri: string): Promise<void> {
+    const directoryInfo = await FileSystem.getInfoAsync(directoryUri);
+
+    if (!directoryInfo.exists) {
+        await FileSystem.makeDirectoryAsync(directoryUri, { intermediates: true });
+    }
+}
+
+async function persistExportForAndroid(fileUri: string, fileName: string): Promise<ExportResult> {
+    const exportDirectory = `${FileSystem.documentDirectory}exports/`;
+    await ensureExportDirectoryExists(exportDirectory);
+
+    const persistentUri = `${exportDirectory}${fileName}`;
+    await FileSystem.copyAsync({ from: fileUri, to: persistentUri });
+
+    return {
+        type: 'saved',
+        fileUri: persistentUri,
+        fileName,
+        reason: 'android-local-fallback',
+    };
+}
+
+async function saveExportToAndroidDirectory(base64: string, fileName: string): Promise<ExportResult> {
+    const initialDirectoryUri = FileSystem.StorageAccessFramework.getUriForDirectoryInRoot('Download');
+    const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync(initialDirectoryUri);
+
+    if (!permissions.granted) {
+        throw new Error('Export cancelled. No folder was selected.');
+    }
+
+    const targetUri = await FileSystem.StorageAccessFramework.createFileAsync(
+        permissions.directoryUri,
+        getFileNameWithoutExtension(fileName),
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+
+    await FileSystem.StorageAccessFramework.writeAsStringAsync(targetUri, base64, {
+        encoding: FileSystem.EncodingType.Base64,
+    });
+
+    return {
+        type: 'saved',
+        fileUri: targetUri,
+        fileName,
+        reason: 'android-folder-export',
+    };
+}
 
 function getTimeSlots(): string[] {
     const slots: string[] = [];
@@ -134,7 +196,7 @@ export async function getExportOptions() {
     return { months, years };
 }
 
-export async function exportActivitiesWorkbook(scope: ExportScope): Promise<void> {
+export async function exportActivitiesWorkbook(scope: ExportScope): Promise<ExportResult> {
     const workbook = XLSX.utils.book_new();
     const monthIds = scope.type === 'year' ? getMonthRangeForYear(scope.value) : [scope.value];
 
@@ -148,10 +210,23 @@ export async function exportActivitiesWorkbook(scope: ExportScope): Promise<void
         type: 'base64',
     });
 
-    const fileUri = `${FileSystem.cacheDirectory}activities-${scope.value}.xlsx`;
+    const fileName = getExportFileName(scope);
+    const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
     await FileSystem.writeAsStringAsync(fileUri, base64, {
         encoding: FileSystem.EncodingType.Base64,
     });
+
+    if (Platform.OS === 'android') {
+        try {
+            return await saveExportToAndroidDirectory(base64, fileName);
+        } catch (error) {
+            if (error instanceof Error && error.message === 'Export cancelled. No folder was selected.') {
+                throw error;
+            }
+
+            return persistExportForAndroid(fileUri, fileName);
+        }
+    }
 
     const canShare = await Sharing.isAvailableAsync();
     if (!canShare) {
@@ -163,4 +238,6 @@ export async function exportActivitiesWorkbook(scope: ExportScope): Promise<void
         dialogTitle: 'Export activity data',
         UTI: 'org.openxmlformats.spreadsheetml.sheet',
     });
+
+    return { type: 'shared', fileUri };
 }

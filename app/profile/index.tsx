@@ -109,10 +109,20 @@ export default function ProfileScreen() {
         setIsExporting(true);
 
         try {
-            if (selectedMonth === 'all') {
-                await exportActivitiesWorkbook({ type: 'year', value: selectedYear });
-            } else {
-                await exportActivitiesWorkbook({ type: 'month', value: `${selectedYear}-${selectedMonth}` });
+            const result =
+                selectedMonth === 'all'
+                    ? await exportActivitiesWorkbook({ type: 'year', value: selectedYear })
+                    : await exportActivitiesWorkbook({ type: 'month', value: `${selectedYear}-${selectedMonth}` });
+
+            if (result.type === 'saved') {
+                if (result.reason === 'android-folder-export') {
+                    Alert.alert('Export complete', `Saved ${result.fileName} to the folder you selected.`);
+                } else {
+                    Alert.alert(
+                        'Export saved locally',
+                        `Created ${result.fileName} in the app's local storage.`
+                    );
+                }
             }
 
             setIsModalVisible(false);
